@@ -18,7 +18,7 @@ int main()
 	{
 		cout << *o << " ";
 	}
-	cout << "test" <<endl;
+	cout << endl;
 	system("pause");
 	//int out1 = 0;
 	//vector<int> t = {}, A1 = { 3, 11 };
