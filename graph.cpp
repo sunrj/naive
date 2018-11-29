@@ -78,7 +78,6 @@ void Graph::dataInput(string edge_file, string attribute_file, string union_file
 		tempEdgeWeight.push_back(w);
 		edgeWeightOnA0.push_back(w);
 		exist.push_back(1);//初始化第i个节点的exist属性为1
-		mustDelete.push_back(0);//初始化第i个节点的mustDelete属性为0
 		weight.push_back(0.0);//初始化第i个节点的weight属性为0.0
 		upWeight.push_back(0.0);//初始化第i个节点的upWeight属性为0.0
 
@@ -245,13 +244,10 @@ float Graph::computeVertexWeight(int id, int attributeId)
 	for (nei = vertex[id].begin() + 1; nei != vertex[id].end(); nei++)
 	{
 		count++;
-		if (!mustDelete[*nei])
-		{
-			//float temp = computeEdgeWeight(id, count, A);
-			float temp = edgeWeightOnA0[id][count] + edgeWeightOnEachAtt[id][count][attributeId];
-			tempEdgeWeight[id][count] = temp;
-			result = result + temp;
-		}
+		//float temp = computeEdgeWeight(id, count, A);
+		float temp = edgeWeightOnA0[id][count] + edgeWeightOnEachAtt[id][count][attributeId];
+		tempEdgeWeight[id][count] = temp;
+		result = result + temp;
 	}
 	return result;
 }
@@ -262,121 +258,21 @@ void Graph::getedgeWeightOnEachAtt()
 	{
 		double algStartTime2 = (double)clock() / CLOCKS_PER_SEC;
 		int count = 0;
-		if (mustDelete[i])
-		{
-			vector<int>::iterator nei;
-			for (nei = vertex[i].begin() + 1; nei != vertex[i].end(); nei++)
-			{
-				count++;
-				vector<float> edgeWeight = {};
-				for (int j = 0; j < allAttribute.size(); j++)
-				{
-					edgeWeight.push_back(0.0);
-				}
-				edgeWeightOnEachAtt[i].push_back(edgeWeight);
-			}
-		}
-		else
-		{
-			vector<int>::iterator nei;
-			for (nei = vertex[i].begin() + 1; nei != vertex[i].end(); nei++)
-			{
-				count++;
-				if (mustDelete[*nei])
-				{
-					vector<float> edgeWeight = {};
-					for (int j = 0; j < allAttribute.size(); j++)
-					{
-						edgeWeight.push_back(0.0);
-					}
-					edgeWeightOnEachAtt[i].push_back(edgeWeight);
-				}
-				else
-				{
-					vector<float> edgeWeight = {};
-					for (int j = 0; j < allAttribute.size(); j++)
-					{
-						float weight = 0.0;
-						weight = Graph::computeEdgeWeight(i, count, j);
-						edgeWeight.push_back(weight);
-					}
-					edgeWeightOnEachAtt[i].push_back(edgeWeight);
-				}
-			}
-		}
-		double runtime2 = (double)clock() / CLOCKS_PER_SEC - algStartTime2;
-		cout << i << "  runtime = " << runtime2 << endl;
-	}
-}
-
-void Graph::vertexDeletion(float w, int b)
-{
-	queue<int> delVertexId = {};
-	for (int i = 0; i < upWeight.size(); i++)//先遍历所有的节点，查看是否有节点的weight upbound小于w，有的话就放入队列中，并把节点的mustDelete属性设置为true
-	{
-		float w_v = 0.0;
-		int count = 0;
 		vector<int>::iterator nei;
 		for (nei = vertex[i].begin() + 1; nei != vertex[i].end(); nei++)
 		{
 			count++;
-			vector<int> rintersec = {};
-			int runion;
-			//getIntersection(attribute[i], attribute[*nei], rintersec);
-			//getUnion(attribute[i], attribute[*nei], runion);
-			rintersec = attributeIntersecSet[i][count];
-			runion = attributeUnionInt[i][count];
-			if (rintersec.size() < b)
+			vector<float> edgeWeight = {};
+			for (int j = 0; j < allAttribute.size(); j++)
 			{
-				tempEdgeWeight[i][count] = float(rintersec.size()) / float(runion);
-				w_v = w_v + float(rintersec.size()) / float(runion);
+				float weight = 0.0;
+				weight = Graph::computeEdgeWeight(i, count, j);
+				edgeWeight.push_back(weight);
 			}
-			else
-			{
-				tempEdgeWeight[i][count] = float(b) / float(runion);
-				w_v = w_v + float(b) / float(runion);
-			}
+			edgeWeightOnEachAtt[i].push_back(edgeWeight);
 		}
-		upWeight[i] = w_v;
-		if (w_v < w)
-		{
-			mustDelete[i] = 1;
-			exist[i] = 0;
-			delVertexId.push(i);
-		}
-	}
-	int delId;
-	while (!delVertexId.empty())//把在对列中的节点出队并更新其所有mustDelete属性为false的邻居节点的weight upbound，如果其邻居节点的weight upbound更新之后小于w，则入队并把节点的mustDelete属性设置为true
-	{
-		int count = 0;
-		delId = delVertexId.front();
-		delVertexId.pop();
-		vector<int>::iterator nei;
-		for (nei = vertex[delId].begin() + 1; nei != vertex[delId].end(); nei++)
-		{
-			count++;
-			if (!mustDelete[*nei])
-			{
-				/*vector<int> rintersec = {}, runion = {};
-				getIntersection(attribute[delId], attribute[*nei], rintersec);
-				getUnion(attribute[delId], attribute[*nei], runion);
-				if (rintersec.size() < b)
-				{
-					upWeight[*nei] = upWeight[*nei] - float(rintersec.size()) / float(runion.size());
-				}
-				else
-				{
-					upWeight[*nei] = upWeight[*nei] - float(b) / float(runion.size());
-				}*/
-				upWeight[*nei] = upWeight[*nei] - tempEdgeWeight[delId][count];
-				if (upWeight[*nei] < w)
-				{
-					mustDelete[*nei] = 1;
-					exist[*nei] = 0;
-					delVertexId.push(*nei);
-				}
-			}
-		}
+		double runtime2 = (double)clock() / CLOCKS_PER_SEC - algStartTime2;
+		cout << i << "  runtime = " << runtime2 << endl;
 	}
 }
 
@@ -386,14 +282,11 @@ int Graph::computeWcoreSize(float w, int attributeId, vector<int> &reexist)
 	queue<int> delVertexId = {};//用队列存储所有不满足条件的节点的id
 	for (int i = 0; i < weight.size(); i++)
 	{
-		if (!mustDelete[i])
+		weight[i] = computeVertexWeight(i, attributeId);
+		if (weight[i] < w)
 		{
-			weight[i] = computeVertexWeight(i, attributeId);
-			if (weight[i] < w)
-			{
-				exist[i] = 0;
-				delVertexId.push(i);
-			}
+			exist[i] = 0;
+			delVertexId.push(i);
 		}
 	}
 	int delId;
@@ -406,7 +299,7 @@ int Graph::computeWcoreSize(float w, int attributeId, vector<int> &reexist)
 		for (nei = vertex[delId].begin() + 1; nei != vertex[delId].end(); nei++)
 		{
 			count++;
-			if (!mustDelete[*nei] && exist[*nei])
+			if (exist[*nei])
 			{
 				//weight[*nei] = weight[*nei] - computeEdgeWeight(delId, *nei, A);
 				weight[*nei] = weight[*nei] - tempEdgeWeight[delId][count];
@@ -421,17 +314,14 @@ int Graph::computeWcoreSize(float w, int attributeId, vector<int> &reexist)
 
 	for (int i = 0; i < exist.size(); i++)//计算剩下的依然存在的节点的个数就是满足attribute weighted core条件的节点集的size
 	{
-		if (!mustDelete[i])
+		if (exist[i])
 		{
-			if (exist[i])
-			{
-				result++;
-				//cout << i << " ";
-			}
-			else
-				reexist.push_back(i);
+			result++;
+			//cout << i << " ";
 		}
-		//if (!mustDelete[i] && exist[i])
+		else
+			reexist.push_back(i);
+		//if (exist[i])
 		//{
 		//	result++;
 		//	//cout << i << " ";
@@ -451,7 +341,6 @@ void Graph::existReset(vector<int> &reexist)
 vector<int> Graph::greedy(float w, int b)
 {
 	vector<int> A = {};//A是最后要输出的最优的属性集
-	//vertexDeletion(w, b);
 	Graph::getedgeWeightOnEachAtt();
 	for (int i = 0; i < b; i++)
 	{
